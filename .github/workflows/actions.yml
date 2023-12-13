@@ -71,3 +71,5 @@ jobs:
           - 80:8080
         options: >-
           --name selenoid-ui
+      selenoid-vnc-firefox:
+        image: selenoid/vnc:firefox_89.0
