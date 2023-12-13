@@ -73,3 +73,5 @@ jobs:
           --name selenoid-ui
       selenoid-vnc-firefox:
         image: selenoid/vnc:firefox_89.0
+        ports:
+          - 4444:4444
