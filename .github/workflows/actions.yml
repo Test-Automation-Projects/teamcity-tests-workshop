@@ -23,6 +23,7 @@ jobs:
               ls -la /tmp/build/volume/teamcity-server-logs/
               ls -la /tmp/build/volume/selenoid-config/
               ls -la ${{ github.workspace }}
+              docker network list
       - name: Copy config
         run: sudo cp infra/browsers.json /tmp/build/volume/selenoid-config/
       - name: Restart selenoid
@@ -73,5 +74,3 @@ jobs:
           --name selenoid-ui
       selenoid-vnc-firefox:
         image: selenoid/vnc:firefox_89.0
-        ports:
-          - 4444:4444
