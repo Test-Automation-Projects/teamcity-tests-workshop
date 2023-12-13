@@ -48,18 +48,27 @@ jobs:
         volumes:
           - /tmp/build/volume/teamcity-server-logs:/opt/teamcity/logs
           - /tmp/build/volume/teamcity-server-data:/data/teamcity_server/datadir
-      teamcity_agent_instance:
+        options: >-
+          --name teamcity-server
+      teamcity-agent-instance:
         image: jetbrains/teamcity-agent
         env:
-          SERVER_URL: "http://localhost:8111"
+          SERVER_URL: http://teamcity-server:8111
+        options: >-
+          --name teamcity-agent
       selenoid:
         image: aerokube/selenoid:latest-release
         ports:
           - 4444:4444
         volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
           - /tmp/build/volume/selenoid-config:/etc/selenoid
-        options: --name selenoid
+        options: >-
+          --name selenoid
       selenoid-ui:
         image: aerokube/selenoid-ui:latest-release
         ports:
           - 80:8080
+        options: >-
+          --name selenoid-ui
+          --entrypoint "/selenoid-ui --selenoid-uri http://selenoid:4444"
