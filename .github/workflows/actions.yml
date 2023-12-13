@@ -6,9 +6,9 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: [ "main", "final-version" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "final-version" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -18,28 +18,49 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Verify services
+        run: |
+              ls -la /tmp/build/volume/teamcity-server-logs/
+              ls -la /tmp/build/volume/selenoid-config/
+              ls -la ${{ github.workspace }}
+      - name: Copy config
+        run: sudo cp infra/browsers.json /tmp/build/volume/selenoid-config/
+      - name: Restart selenoid
+        uses: docker://docker
+        with:
+          args: docker restart selenoid
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Start Setup Tests
         run: mvn clean test -Dtest=SetupTest#startUpTest
+      - name: Run API tests
+        run: mvn test -DsuiteXmlFile=testng-suites/api-suite.xml
+      - name: Run UI tests
+        run: mvn test -DsuiteXmlFile=testng-suites/ui-suite.xml
 
     services:
       teamcity-server-instance:
         image: jetbrains/teamcity-server
         ports:
           - 8111:8111
+        volumes:
+          - /tmp/build/volume/teamcity-server-logs:/opt/teamcity/logs
+          - /tmp/build/volume/teamcity-server-data:/data/teamcity_server/datadir
       teamcity_agent_instance:
         image: jetbrains/teamcity-agent
         env:
           SERVER_URL: "http://localhost:8111"
-      selenoid-chrome:
-        image: selenoid/chrome
-      # selenoid-ui:
-      #   image: aerokube/selenoid-ui:latest-release
-      #   ports:
-      #     - 8080:8080
-      #   options: >-
-      #     --selenoid-uri "http://localhost:4444"
+      selenoid:
+        image: aerokube/selenoid:latest-release
+        ports:
+          - 4444:4444
+        volumes:
+          - /tmp/build/volume/selenoid-config:/etc/selenoid
+        options: --name selenoid
+      selenoid-ui:
+        image: aerokube/selenoid-ui:latest-release
+        ports:
+          - 80:8080
